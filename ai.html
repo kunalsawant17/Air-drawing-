@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Air Drawing Pro</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#050505;
+    overflow:hidden;
+}
+
+video{
+    display:none;
+}
+
+#canvas{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+    background:#050505;
+    cursor:none;
+}
+
+#toolbar{
+    position:fixed;
+    top:15px;
+    left:15px;
+    z-index:999;
+    background:rgba(20,20,20,0.9);
+    border:1px solid #00ffff50;
+    border-radius:12px;
+    padding:12px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    backdrop-filter:blur(10px);
+}
+
+#status{
+    color:#00ffff;
+    font-weight:bold;
+    min-width:90px;
+}
+
+button{
+    padding:8px 12px;
+    background:#111;
+    color:white;
+    border:1px solid #00ffff;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#222;
+}
+</style>
+</head>
+<body>
+
+<video class="input_video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<div id="toolbar">
+    <span id="status">Loading...</span>
+
+    <input type="color" id="colorPicker" value="#00ffff">
+
+    <input type="range"
+           id="sizeSlider"
+           min="2"
+           max="30"
+           value="8">
+
+    <button id="clearBtn">Clear</button>
+</div>
+
+<script>
+const videoElement = document.querySelector('.input_video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const colorPicker = document.getElementById('colorPicker');
+const sizeSlider = document.getElementById('sizeSlider');
+const statusText = document.getElementById('status');
+
+function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let lastX = null;
+let lastY = null;
+
+function fingerUp(lm, tip, pip){
+    return lm[tip].y < lm[pip].y;
+}
+
+function countFingers(lm){
+
+    let count = 0;
+
+    if(fingerUp(lm,8,6)) count++;
+    if(fingerUp(lm,12,10)) count++;
+    if(fingerUp(lm,16,14)) count++;
+    if(fingerUp(lm,20,18)) count++;
+
+    if(lm[4].x > lm[3].x){
+        count++;
+    }
+
+    return count;
+}
+
+function drawGlow(x,y,px,py){
+
+    const color = colorPicker.value;
+    const size = parseInt(sizeSlider.value);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.shadowBlur = size * 3;
+    ctx.shadowColor = color;
+
+    ctx.beginPath();
+    ctx.moveTo(px,py);
+    ctx.lineTo(x,y);
+    ctx.stroke();
+}
+
+document.getElementById('clearBtn').onclick=()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+};
+
+function onResults(results){
+
+    if(!results.multiHandLandmarks ||
+       results.multiHandLandmarks.length===0){
+
+        lastX = null;
+        lastY = null;
+        statusText.innerText="No Hand";
+        return;
+    }
+
+    const lm = results.multiHandLandmarks[0];
+
+    const fingers = countFingers(lm);
+
+    const x = (1-lm[8].x)*canvas.width;
+    const y = lm[8].y*canvas.height;
+
+    if(fingers===1){
+
+        statusText.innerText="Drawing";
+
+        if(lastX!==null){
+            drawGlow(x,y,lastX,lastY);
+        }
+
+        lastX = x;
+        lastY = y;
+
+    }
+    else if(fingers>=4){
+
+        statusText.innerText="Erasing";
+
+        ctx.save();
+        ctx.globalCompositeOperation="destination-out";
+
+        ctx.beginPath();
+        ctx.arc(x,y,40,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.restore();
+
+        lastX = null;
+        lastY = null;
+    }
+    else if(fingers===0){
+
+        statusText.innerText="Paused";
+
+        lastX = null;
+        lastY = null;
+    }
+    else{
+
+        statusText.innerText="Ready";
+
+        lastX = null;
+        lastY = null;
+    }
+}
+
+const hands = new Hands({
+    locateFile:(file)=>{
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }
+});
+
+hands.setOptions({
+    maxNumHands:1,
+    modelComplexity:1,
+    minDetectionConfidence:0.7,
+    minTrackingConfidence:0.7
+});
+
+hands.onResults(onResults);
+
+const camera = new Camera(videoElement,{
+    onFrame:async()=>{
+        await hands.send({image:videoElement});
+    },
+    width:1280,
+    height:720
+});
+
+camera.start();
+</script>
+
+</body>
+</html>
