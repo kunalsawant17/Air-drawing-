@@ -23,7 +23,15 @@ body{
 }
 
 video{
-    display:none;
+    position:fixed;
+    top:80px;
+    right:10px;
+    width:220px !important;
+    height:160px !important;
+    display:block !important;
+    z-index:99999;
+    border:2px solid cyan;
+    background:#222;
 }
 
 #canvas{
@@ -73,7 +81,7 @@ button:hover{
 </head>
 <body>
 
-<video class="input_video" autoplay playsinline></video>
+<video class="input_video" autoplay playsinline muted></video>
 <canvas id="canvas"></canvas>
 
 <div id="toolbar">
