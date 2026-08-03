@@ -43,6 +43,15 @@ video{
     z-index:1;
     background:transparent;
 }
+#threeContainer{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+    z-index:2;
+    pointer-events:none;
+    }
 
 #toolbar{
     position:fixed;
@@ -77,13 +86,21 @@ button{
 button:hover{
     background:#222;
 }
+select{
+    padding:8px;
+    border:none;
+    border-radius:6px;
+    background:#111;
+    color:white;
+    }
 </style>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
 
 <video class="input_video" autoplay playsinline muted></video>
 <canvas id="canvas"></canvas>
-
+    <div id="threeContainer"></div>
 <div id="toolbar">
     <span id="status">Loading...</span>
 
@@ -96,6 +113,13 @@ button:hover{
            value="8">
 
     <button id="clearBtn">Clear</button>
+    <button id="addObject">+ Object</button>
+
+<select id="objectType">
+    <option value="cube">Cube</option>
+    <option value="sphere">Sphere</option>
+    <option value="cylinder">Cylinder</option>
+</select>
 </div>
 
 <script>
@@ -266,6 +290,136 @@ async function startCamera() {
 }
 
 startCamera();
+    const scene = new THREE.Scene();
+
+const camera3D = new THREE.PerspectiveCamera(
+75,
+window.innerWidth / window.innerHeight,
+0.1,
+1000
+);
+
+const renderer = new THREE.WebGLRenderer({
+alpha:true,
+antialias:true
+});
+
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+document
+.getElementById("threeContainer")
+.appendChild(renderer.domElement);
+
+camera3D.position.z = 5;
+
+const light = new THREE.AmbientLight(
+0xffffff,
+2
+);
+
+scene.add(light);
+
+let activeObject = null;
+
+document
+.getElementById("addObject")
+.onclick = () => {
+
+if(activeObject){
+scene.remove(activeObject);
+}
+
+const type =
+document.getElementById("objectType").value;
+
+if(type === "cube"){
+
+activeObject = new THREE.Mesh(
+new THREE.BoxGeometry(),
+new THREE.MeshNormalMaterial({
+wireframe:true
+})
+);
+
+}
+
+if(type === "sphere"){
+
+activeObject = new THREE.Mesh(
+new THREE.SphereGeometry(
+1,
+32,
+32
+),
+new THREE.MeshNormalMaterial({
+wireframe:true
+})
+);
+
+}
+
+if(type === "cylinder"){
+
+activeObject = new THREE.Mesh(
+new THREE.CylinderGeometry(
+1,
+1,
+2,
+32
+),
+new THREE.MeshNormalMaterial({
+wireframe:true
+})
+);
+
+}
+
+scene.add(activeObject);
+
+};
+
+function animateJarvis(){
+
+requestAnimationFrame(
+animateJarvis
+);
+
+if(activeObject){
+
+activeObject.rotation.x += 0.01;
+activeObject.rotation.y += 0.01;
+
+}
+
+renderer.render(
+scene,
+camera3D
+);
+
+}
+
+animateJarvis();
+
+window.addEventListener(
+"resize",
+() => {
+
+camera3D.aspect =
+window.innerWidth /
+window.innerHeight;
+
+camera3D.updateProjectionMatrix();
+
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+}
+);
 </script>
 
 </body>
