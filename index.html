@@ -237,15 +237,35 @@ hands.setOptions({
 
 hands.onResults(onResults);
 
-const camera = new Camera(videoElement,{
-    onFrame:async()=>{
-        await hands.send({image:videoElement});
-    },
-    width:1280,
-    height:720
-});
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "user"
+            },
+            audio: false
+        });
 
-camera.start();
+        videoElement.srcObject = stream;
+
+        videoElement.onloadedmetadata = async () => {
+            await videoElement.play();
+
+            async function detectFrame() {
+                await hands.send({ image: videoElement });
+                requestAnimationFrame(detectFrame);
+            }
+
+            detectFrame();
+        };
+
+    } catch (err) {
+        statusText.innerText = "Camera Error";
+        console.error(err);
+    }
+}
+
+startCamera();
 </script>
 
 </body>
