@@ -93,6 +93,18 @@ select{
     background:#111;
     color:white;
     }
+#searchBox{
+    width:180px;
+    padding:8px;
+    border:none;
+    border-radius:6px;
+    background:#111;
+    color:white;
+}
+
+#searchBtn{
+    padding:8px 12px;
+}
 </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
@@ -114,6 +126,15 @@ select{
 
     <button id="clearBtn">Clear</button>
     <button id="addObject">+ Object</button>
+    <input
+type="text"
+id="searchBox"
+placeholder="Search car, bike, cpu..."
+>
+
+<button id="searchBtn">
+Search
+</button>
 
 <select id="objectType">
     <option value="cube">Cube</option>
@@ -323,6 +344,23 @@ const light = new THREE.AmbientLight(
 scene.add(light);
 
 let activeObject = null;
+    const objectMap = {
+
+car:"cube",
+
+bike:"sphere",
+
+cpu:"cylinder",
+
+motherboard:"cube",
+
+gpu:"cube",
+
+ram:"cylinder",
+
+drone:"sphere"
+
+};
 
 document
 .getElementById("addObject")
@@ -402,7 +440,41 @@ camera3D
 }
 
 animateJarvis();
+document
+.getElementById("searchBtn")
+.onclick = () => {
 
+const query =
+document
+.getElementById("searchBox")
+.value
+.toLowerCase()
+.trim();
+
+if(!query){
+return;
+}
+
+const type =
+objectMap[query];
+
+if(!type){
+
+alert("Object not found");
+
+return;
+
+}
+
+document
+.getElementById("objectType")
+.value = type;
+
+document
+.getElementById("addObject")
+.click();
+
+};
 window.addEventListener(
 "resize",
 () => {
