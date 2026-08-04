@@ -206,7 +206,23 @@ function onResults(results){
     }
 
     const lm = results.multiHandLandmarks[0];
+if(activeObject){
 
+    const handX = lm[8].x;
+    const handY = lm[8].y;
+
+    if(lastHandX !== null){
+
+        activeObject.rotation.y +=
+        (handX - lastHandX) * 5;
+
+        activeObject.rotation.x +=
+        (handY - lastHandY) * 5;
+    }
+
+    lastHandX = handX;
+    lastHandY = handY;
+}
     const fingers = countFingers(lm);
 
     const x = (1-lm[8].x)*canvas.width;
@@ -333,6 +349,8 @@ const light = new THREE.AmbientLight(
 scene.add(light);
 
 let activeObject = null;
+    let grabbed = false;
+let pinchDistance = 0.05;
     const objectMap = {
 
 car:"cube",
